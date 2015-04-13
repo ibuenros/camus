@@ -258,13 +258,14 @@ public class EtlRecordReader extends RecordReader<EtlKey, CamusWrapper> {
           try {
             wrapper = getWrappedRecord(message);
           } catch (Exception e) {
-            if (exceptionCount < getMaximumDecoderExceptionsToPrint(context)) {
-              mapperContext.write(key, new ExceptionWritable(e));
-              exceptionCount++;
-            } else if (exceptionCount == getMaximumDecoderExceptionsToPrint(context)) {
-              exceptionCount = Integer.MAX_VALUE; // Any random value
+            mapperContext.write(key,
+                new SkippedRecordException(e, exceptionCount < getMaximumDecoderExceptionsToPrint(context)));
+            if (exceptionCount == getMaximumDecoderExceptionsToPrint(context)) {
               log.info("The same exception has occured for more than " + getMaximumDecoderExceptionsToPrint(context)
                   + " records. All further exceptions will not be printed");
+              exceptionCount = Integer.MAX_VALUE;
+            } else {
+              exceptionCount++;
             }
             continue;
           }
